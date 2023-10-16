@@ -2,6 +2,19 @@
 #include "Game.hpp"
 using namespace std;
 
+Game::Game(){
+    board = {{" "," "," "},{" "," "," "},{" "," "," "}};
+    current_turn = my_turn;
+    srand((unsigned) time(NULL));
+    player = "ox"[rand() % 2];
+    if (player == "x") me = "o";
+    else me = "x";
+    
+    cout<<"You will play as "<<player<<endl;
+    if(player == "x")current_turn = player_turn;
+    runGame();
+}
+
 void Game::drawBoard(){
     /*The drawBoard method of the Game class can be called upon to draw the current board state
      at any point in the game to the ostream; it uses the public variable called board to do so*/
@@ -25,14 +38,14 @@ int Game::myTurn(){
         for(int j = 0; j<3;j++){
             if(board[i][j] == " "){
                 boardTemp[i][j] = me;
-                if(checkState(boardTemp) == 1){
+                if(checkState(boardTemp) == player_lost){
                     board[i][j] = me;
-                    turn = 1;return 0;
+                    return 0;
                 }
                 boardTemp[i][j] = player;
-                if(checkState(boardTemp) == -1){
+                if(checkState(boardTemp) == player_won){
                     board[i][j] = me;
-                    turn = 1;return 0;
+                    return 0;
                 }
                 boardTemp[i][j] = " ";
             }
@@ -44,7 +57,7 @@ int Game::myTurn(){
         for(int j = 0;j<3;j++){
             if(board[i][j] == " " && i%2 == 0 && j%2 == 0 && ((i + j) != 2 || i == 0 || j == 0)){
                 board[i][j] = me;
-                turn = 1;return 0;
+                return 0;
             }
         }
     }
@@ -52,7 +65,7 @@ int Game::myTurn(){
         for(int j = 0;j<3;j++){
             if(board[i][j] == " " && i%2 == 0 && j%2 == 0){
                 board[i][j] = me;
-                turn = 1;return 0;
+                return 0;
             }
         }
     }
@@ -60,7 +73,7 @@ int Game::myTurn(){
         for(int j = 0;j<3;j++){
             if(board[i][j] == " "){
                 board[i][j] = me;
-                turn = 1;return 0;
+                return 0;
             }
         }
     }
@@ -84,50 +97,35 @@ void Game::playerTurn(){
             break;
         }
         else{
-            cout<<"enter a valid move "<<endl;
+            cout<<"Play a valid move \nEnter two integers (row col): "<<endl;
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
             cin>>row>>col;
         }
     } while (true);
-    
-    turn = 0;
-    runGame();
 }
 
 void Game::runGame(){
-    drawBoard();
-    switch (checkState(board)) {
-        case 0:
-            if(turn == 1){
-                playerTurn();
-                break;
-            }
-            else if(turn == 0){
-                myTurn();
-                runGame();
-                break;
-            }
-        case -1:
-            drawBoard();
-            cout<<"Nicely done, YOU WON!"<<endl;
-            break;
-        case 1:
-            drawBoard();
-            cout<<"Better luck next time, I WON!"<<endl;
-            break;
-        case 2:
-            drawBoard();
-            cout<<"That was close, ITS A TIE!"<<endl;
-            break;
-        default:
-            drawBoard();
-            cout<<"Something went wrong"<<endl;
-            break;
-    }
+//    this is the main game loop; I use a do-while statement to efficiently handle the game instances' lifesycle
+    do {
+        if(current_turn == player_turn){
+            playerTurn();
+            current_turn = my_turn;
+        }
+        else if(current_turn == my_turn){
+            myTurn();
+            current_turn = player_turn;
+        }
+        drawBoard();
+        current_game_state = (game_state)checkState(board);
+    } while (current_game_state == game_on);
+    endGame();
 }
 
-
-
 int Game::checkState(vector<vector<string>> board){
+    /*This function checks the state of the game when necessary. It is used at two times - by the runGame
+     method to check what should be displayed or which process should be initiated, and by the myTurn
+     method to predict future game states.*/
     std::unordered_map<std::string, int> stringToInteger = {{" ", 0},{me, 1},{player, -1}};
     int boardInt[9];
     int blank = 0,k=0,i=0;
@@ -139,25 +137,41 @@ int Game::checkState(vector<vector<string>> board){
         }
     }
     for(int j = 0; j<3;j++){
-        if ((boardInt[j] + boardInt[j + 3] + boardInt[j + 6]) == 3) return 1;
-        else if ((boardInt[j] + boardInt[j + 3] + boardInt[j + 6]) == -3) return -1;
+        if ((boardInt[j] + boardInt[j + 3] + boardInt[j + 6]) == 3) return player_lost;
+        else if ((boardInt[j] + boardInt[j + 3] + boardInt[j + 6]) == -3) return player_won;
     }
     
-    if ((boardInt[i] + boardInt[i + 1] + boardInt[i + 2]) == 3) return 1;
-    else if ((boardInt[i+3] + boardInt[i + 4] + boardInt[i + 5]) == 3) return 1;
-    else if ((boardInt[i+6] + boardInt[i + 7] + boardInt[i + 8]) == 3) return 1;
-    else if ((i == 2) && (boardInt[i] + boardInt[i + 2] + boardInt[i + 4]) == 3) return 1;
-    else if ((i == 0) && (boardInt[i] + boardInt[i + 4] + boardInt[i + 8]) == 3) return 1;
+    if ((boardInt[i] + boardInt[i + 1] + boardInt[i + 2]) == 3) return player_lost;
+    else if ((boardInt[i+3] + boardInt[i + 4] + boardInt[i + 5]) == 3) return player_lost;
+    else if ((boardInt[i+6] + boardInt[i + 7] + boardInt[i + 8]) == 3) return player_lost;
+    else if ((i == 2) && (boardInt[i] + boardInt[i + 2] + boardInt[i + 4]) == 3) return player_lost;
+    else if ((i == 0) && (boardInt[i] + boardInt[i + 4] + boardInt[i + 8]) == 3) return player_lost;
     
-    else if ((boardInt[i] + boardInt[i + 1] + boardInt[i + 2]) == -3) return -1;
-    else if ((boardInt[i] + boardInt[i + 3] + boardInt[i + 6]) == -3) return -1;
-    else if ((boardInt[i+3] + boardInt[i + 4] + boardInt[i + 5]) == -3) return -1;
-    else if ((boardInt[i+6] + boardInt[i + 7] + boardInt[i + 8]) == -3) return -1;
-    else if ((i == 2) && (boardInt[i] + boardInt[i + 2] + boardInt[i + 4]) == -3) return -1;
-    else if ((i == 0) && (boardInt[i] + boardInt[i + 4] + boardInt[i + 8]) == -3) return -1;
+    else if ((boardInt[i] + boardInt[i + 1] + boardInt[i + 2]) == -3) return player_won;
+    else if ((boardInt[i+3] + boardInt[i + 4] + boardInt[i + 5]) == -3) return player_won;
+    else if ((boardInt[i+6] + boardInt[i + 7] + boardInt[i + 8]) == -3) return player_won;
+    else if ((i == 2) && (boardInt[i] + boardInt[i + 2] + boardInt[i + 4]) == -3) return player_won;
+    else if ((i == 0) && (boardInt[i] + boardInt[i + 4] + boardInt[i + 8]) == -3) return player_won;
 
-    if (blank == 0) return 2;
+    if (blank == 0) return game_tied;
 
-    return 0;
+    return game_on;
 }
 
+
+void Game::endGame(){
+    switch(current_game_state){
+        case player_lost: {
+            cout<< "Better luck next time, YOU LOST.\n";
+            break;
+        }
+        case player_won: {
+            cout<< "You got me there, YOU WON!\n";
+            break;
+        }
+        case game_tied: {
+            cout<< "That was a close one, THE GAME TIED!\n";
+            break;
+        }
+    }
+}

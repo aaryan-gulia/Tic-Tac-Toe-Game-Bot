@@ -4,40 +4,38 @@
 #include <algorithm>
 #include <iostream>
 
-using namespace std;
 #include <stdio.h>
 
 #ifndef Game_H
 #define Game_H
-class Game{
-//This is the primary Game class, and sets attributes and functions for every game instance; the primary game loop is accessed through objects of the class
-    public:
-//  These variables are important definers of any state, including the board state, the token of the player and computer, and whose turn it is to play
-    vector<vector<string>> board = {{" "," "," "},{" "," "," "},{" "," "," "}};
-    string player, me;
-    int turn;
-    
 
-    void drawBoard();
+class Game{
+    //This is the primary Game class, and sets attributes and functions for every game instance; the primary game loop is accessed through objects of the class
+private:
+    std::vector<std::vector<std::string>> board;
+    enum turn{
+        player_turn = 0,
+        my_turn = 1
+    }current_turn;
+    enum game_state{
+        player_lost = -1,
+        game_on = 0,
+        player_won = 1,
+        game_tied = 2
+    }current_game_state;
     
+    void drawBoard();
     void playerTurn();
     int myTurn();
-    int checkState(vector<vector<string>> board);
     
-    void startGame();
+    int checkState(std::vector<std::vector<std::string>> board);
     void runGame();
+    void endGame();
+public:
+    //  These variables are important definers of any state, including the board state, the token of the player and computer, and whose turn it is to play
+    std::string player, me;
     
-    Game(){
-        turn = 0;
-        srand((unsigned) time(NULL));
-        player = "ox"[rand() % 2];
-        if (player == "x") me = "o";
-        else me = "x";
-        
-        cout<<"You will play as "<<player<<endl;
-        if(player == "x")turn = 1;
-        runGame();
-    }
+    Game();
 };
 
 #endif
